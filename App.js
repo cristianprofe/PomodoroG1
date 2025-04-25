@@ -1,10 +1,11 @@
-import { SafeAreaView, StyleSheet, Text, View, Platform } from "react-native";
+import { SafeAreaView, StyleSheet, View, Platform } from "react-native";
 import Titulo from "./src/components/Titulo";
 import Boton from "./src/components/Boton";
 import Visor from "./src/components/visor";
 import Tabs from "./src/components/Tabs";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { enviarNotificacion } from "./src/utility/notificaciones";
 
 export default function App() {
   //logica del componente
@@ -16,28 +17,64 @@ export default function App() {
   //colores - vamos a crear un arreglo de colores
   const colores = ["#F0B16C", "#EA6CF0", "#6CF0CA"];
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      {/*Esto es para ios */}
+  //solicitar permisos
+  const solicitarPermisosNotificaciones = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") {
+      const { status: newStatus } =
+        await Notifications.requestPermissionsAsync();
+      if (newStatus !== "granted") {
+        console.log("Permiso de notificación denegado");
+        return;
+      }
+    }
+    console.log("Permiso de notificación concedido");
+  };
 
-      <View
-        style={[
-          styles.container,
-          { paddingTop: Platform.OS === "android" ? 25 : 0 },
-          { backgroundColor: colores[seleccion] },
-        ]}
-      >
+  useEffect(() => {
+    solicitarPermisosNotificaciones();
+  }, []);
+
+  useEffect(() => {
+    let interval = null;
+    if (run) {
+      interval = setInterval(() => {
+        setTiempo((prevTiempo) => prevTiempo - 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+
+    if (tiempo === 0) {
+      setRun(false);
+      setTiempo(seleccion === 0 ? 25 * 60 : seleccion === 1 ? 5 * 60 : 15 * 60);
+
+      enviarNotificacion();
+    }
+
+    return () => clearInterval(interval);
+  }, [run, tiempo]);
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { paddingTop: Platform.OS === "android" ? 25 : 0 },
+        { backgroundColor: colores[seleccion] },
+      ]}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
         <StatusBar style="auto" />
         <Titulo title="Pomodoro App" />
-        <Visor tiempo="25:00" />
+        <Visor tiempo={tiempo} />
         <Boton run={run} setRun={setRun} />
         <Tabs
           seleccion={seleccion}
           setSeleccion={setSeleccion}
           setTiempo={setTiempo}
         />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 

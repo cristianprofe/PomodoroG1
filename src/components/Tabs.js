@@ -17,6 +17,9 @@ export default function Tabs(props) {
           style={({ pressed }) => [
             styles.boton,
             { opacity: pressed ? 0.5 : 1 },
+            index !== seleccion
+              ? { borderColor: "transparent" }
+              : { borderColor: "white" },
           ]}
           onPress={() => cambiarSeleccion(index)}
         >
